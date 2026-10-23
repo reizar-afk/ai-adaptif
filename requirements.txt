@@ -2,5 +2,6 @@ streamlit
 chromadb
 sentence-transformers
 torch
+torchvision
 google-genai
 pyyaml
