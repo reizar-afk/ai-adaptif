@@ -5,7 +5,7 @@ import base64
 from rag.query import Assistant
 from rag.generate import answer
 
-st.set_page_config(page_title="AI Reizar", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Reii Stru", layout="centered", initial_sidebar_state="collapsed")
 
 # --- FUNGSI UNTUK BACKGROUND GAMBAR ---
 def get_base64_of_bin_file(bin_file):
@@ -14,7 +14,7 @@ def get_base64_of_bin_file(bin_file):
     return base64.b64encode(data).decode()
 
 # Ganti 'bg.jpg' kalau nama file foto lu beda
-img_base64 = get_base64_of_bin_file('bg.jpg') 
+img_base64 = get_base64_of_bin_file('d6193632d606fd315b6e1e368d6542df.jpg') 
 
 # --- CSS TAMPILAN CHATGPT ---
 st.markdown(f"""
@@ -94,7 +94,7 @@ st.markdown(f"""
         z-index: 999;
     }}
 </style>
-<div class="ai-name">🤖 Reii AI</div>
+<div class="ai-name">Ambatron</div>
 """, unsafe_allow_html=True)
 
 os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY")
