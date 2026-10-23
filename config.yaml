@@ -1,0 +1,21 @@
+paths:
+  raw: data/raw
+  processed: data/processed
+  chroma: data/chroma
+
+sources:
+  wikipedia:
+    langs: ["id", "en"]
+    max_articles: 500
+  stackexchange:
+    site: "stackoverflow"
+    max_questions: 1000
+  github_code:
+    languages: ["Python", "C++", "JavaScript"]
+    max_files: 2000
+
+rag:
+  embedding_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  chunk_size: 512
+  chunk_overlap: 64
+  collection: "ai_adaptif"
