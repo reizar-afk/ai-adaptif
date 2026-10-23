@@ -19,11 +19,12 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS TINGKAT DEWA ---
+# --- CSS ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     #MainMenu, header, footer {{visibility: hidden;}}
+    
     .stApp {{
         background-image: url("data:image/jpeg;base64,{img_base64}");
         background-size: cover;
@@ -35,22 +36,22 @@ st.markdown(f"""
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    /* Sembunyiin sidebar bawaan, kita pake custom */
+    /* Sembunyiin sidebar bawaan Streamlit */
     [data-testid="stSidebar"] {{ display: none !important; }}
     
     /* HEADER BAR */
     .chatgpt-header {{
         position: fixed; top: 0; left: 0; right: 0; height: 60px;
-        background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(15px);
+        background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px);
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0 20px; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 0 15px; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1);
     }}
     .header-btn {{
         color: #ccc; font-size: 24px; cursor: pointer; text-decoration: none;
-        background: none; border: none; padding: 5px;
+        background: none; border: none; padding: 5px; display: flex; align-items: center; justify-content: center;
     }}
     .header-btn:hover {{ color: #fff; }}
-    .header-title {{ color: #fff; font-family: 'Inter'; font-weight: 600; font-size: 16px; }}
+    .header-title {{ color: #fff; font-family: 'Inter'; font-weight: 600; font-size: 16px; flex-grow: 1; text-align: center; }}
     
     .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
@@ -75,68 +76,63 @@ st.markdown(f"""
     }}
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
-    
-    /* MENU SIDEBAR CUSTOM */
-    .custom-sidebar {{
-        position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
-        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255,255,255,0.1); z-index: 999;
-        padding: 20px; overflow-y: auto;
+
+    /* SIDEBAR PANEL (Mengambang di atas chat) */
+    .sidebar-panel {{
+        position: fixed; top: 60px; left: 0; width: 280px; height: calc(100vh - 60px);
+        background: rgba(25, 25, 25, 0.95); backdrop-filter: blur(20px);
+        z-index: 1001; padding: 20px; overflow-y: auto;
+        border-right: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        transition: transform 0.3s ease;
     }}
+    .sidebar-header {{ color: white; font-family: 'Inter'; font-size: 18px; margin-bottom: 20px; font-weight: bold; }}
     .sidebar-item {{
-        color: #ccc; padding: 10px; border-radius: 8px; cursor: pointer;
-        margin-bottom: 5px; font-family: 'Inter'; font-size: 14px;
-        display: block; text-decoration: none;
+        color: #ccc; padding: 12px; border-radius: 8px; cursor: pointer;
+        margin-bottom: 8px; font-family: 'Inter'; font-size: 14px;
+        display: block; text-decoration: none; border: 1px solid rgba(255,255,255,0.05);
     }}
     .sidebar-item:hover {{ background: rgba(255,255,255,0.1); color: white; }}
 </style>
 """, unsafe_allow_html=True)
 
-# --- STATE MANAGEMENT UNTUK RIWAYAT CHAT ---
+# --- STATE MANAGEMENT ---
 if "chat_sessions" not in st.session_state:
-    st.session_state.chat_sessions = {} # Format: {id: {"title": str, "messages": []}}
+    st.session_state.chat_sessions = {}
 if "current_chat_id" not in st.session_state:
     st.session_state.current_chat_id = None
+
+# Gunakan session_state untuk toggle sidebar tanpa reload
 if "show_sidebar" not in st.session_state:
     st.session_state.show_sidebar = False
 
-# --- LOGIKA BUKA TUTUP SIDEBAR & CHAT BARU ---
-query_params = st.query_params
-if "action" in query_params:
-    if query_params["action"] == "toggle_sidebar":
+# --- HEADER BAR ---
+# Pakai tombol python agar tidak reload halaman
+col1, col2, col3 = st.columns([1, 8, 1])
+with col1:
+    if st.button("☰", key="toggle_menu"):
         st.session_state.show_sidebar = not st.session_state.show_sidebar
-    elif query_params["action"] == "new_chat":
+with col2:
+    st.markdown('<div style="text-align: center; color: white; font-family: Inter; font-weight: bold; margin-top: 5px;">🤖 Ambatron</div>', unsafe_allow_html=True)
+with col3:
+    if st.button("✏️", key="new_chat"):
         st.session_state.current_chat_id = None
         st.session_state.show_sidebar = False
-    elif query_params["action"].startswith("load_"):
-        chat_id = query_params["action"].replace("load_", "")
-        st.session_state.current_chat_id = chat_id
-        st.session_state.show_sidebar = False
-    
-    # Bersihin URL biar ga looping
-    st.query_params.clear()
-    st.rerun()
+        st.rerun()
 
-# --- HEADER BAR ---
-st.markdown(f"""
-<div class="chatgpt-header">
-    <a href="?action=toggle_sidebar" target="_self" class="header-btn">☰</a>
-    <span class="header-title">🤖 Ambatron</span>
-    <a href="?action=new_chat" target="_self" class="header-btn">✏️</a>
-</div>
-""", unsafe_allow_html=True)
-
-# --- TAMPILIN SIDEBAR JIKA DIBUKA ---
+# --- SIDEBAR PANEL ---
 if st.session_state.show_sidebar:
-    st.markdown('<div class="custom-sidebar">', unsafe_allow_html=True)
-    st.markdown("<h3 style='color:white; font-family:Inter;'>Riwayat Chat</h3>", unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-header">Riwayat Chat</div>', unsafe_allow_html=True)
     
     if not st.session_state.chat_sessions:
         st.markdown("<p style='color:#aaa; font-size:14px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
     else:
         for chat_id, data in reversed(list(st.session_state.chat_sessions.items())):
-            # Bikin link buat load chat
-            st.markdown(f'<a href="?action=load_{chat_id}" target="_self" class="sidebar-item">💬 {data["title"]}</a>', unsafe_allow_html=True)
+            if st.button(f"💬 {data['title']}", key=f"load_{chat_id}", use_container_width=True):
+                st.session_state.current_chat_id = chat_id
+                st.session_state.show_sidebar = False
+                st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -150,7 +146,7 @@ def load_ai():
 
 assistant = load_ai()
 
-# --- RENDER CHAT AKTIF ---
+# --- RENDER CHAT ---
 current_messages = []
 if st.session_state.current_chat_id and st.session_state.current_chat_id in st.session_state.chat_sessions:
     current_messages = st.session_state.chat_sessions[st.session_state.current_chat_id]["messages"]
@@ -163,21 +159,16 @@ for message in current_messages:
 
 # --- INPUT CHAT ---
 if prompt := st.chat_input("Tanya apa aja..."):
-    # Kalau belum ada chat aktif, bikin chat baru
     if not st.session_state.current_chat_id:
         new_id = str(uuid.uuid4())[:6]
         st.session_state.current_chat_id = new_id
-        # Ambil 20 huruf pertama sebagai judul
-        title = prompt[:20] + ("..." if len(prompt) > 20 else "")
+        title = prompt[:25] + ("..." if len(prompt) > 25 else "")
         st.session_state.chat_sessions[new_id] = {"title": title, "messages": []}
     
     chat_id = st.session_state.current_chat_id
-    
-    # Simpan pesan user
     st.session_state.chat_sessions[chat_id]["messages"].append({"role": "user", "content": prompt})
     st.markdown(f'<div class="chat-bubble-user">{prompt}</div>', unsafe_allow_html=True)
 
-    # Generate jawaban AI
     with st.spinner("Ambatron sedang berpikir..."):
         response = answer(assistant, prompt, "user1")
         st.markdown(f'<div class="chat-bubble-ai">{response}</div>', unsafe_allow_html=True)
