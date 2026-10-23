@@ -5,26 +5,29 @@ import base64
 from rag.query import Assistant
 from rag.generate import answer
 
-st.set_page_config(page_title="Reii Stru", layout="centered", initial_sidebar_state="collapsed")
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="Reii Stru", layout="wide", initial_sidebar_state="expanded")
 
-# --- FUNGSI UNTUK BACKGROUND GAMBAR ---
+# --- FUNGSI BACKGROUND ---
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
-# Ganti 'bg.jpg' kalau nama file foto lu beda
-img_base64 = get_base64_of_bin_file('d6193632d606fd315b6e1e368d6542df.jpg') 
+try:
+    img_base64 = get_base64_of_bin_file('bg.jpg')
+except:
+    img_base64 = "" # Fallback kalau gambar nggak ada
 
 # --- CSS TAMPILAN CHATGPT ---
 st.markdown(f"""
 <style>
-    /* Sembunyiin header bawaan Streamlit */
+    /* Sembunyiin header & footer bawaan Streamlit */
     #MainMenu {{visibility: hidden;}}
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
-    /* Background pakai foto lu */
+    /* Background utama */
     .stApp {{
         background-image: url("data:image/jpeg;base64,{img_base64}");
         background-size: cover;
@@ -32,20 +35,19 @@ st.markdown(f"""
         background-attachment: fixed;
     }}
     
-    /* Overlay gelap biar tulisan kebaca */
+    /* Overlay gelap biar elegan */
     .stApp::before {{
         content: "";
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.85); /* Lebih gelap biar teks jelas */
         z-index: -1;
     }}
     
-    /* Container chat biar di tengah */
-    .block-container {{
-        padding-top: 2rem !important;
-        padding-bottom: 100px !important;
-        max-width: 800px;
+    /* Sidebar kiri (seperti ChatGPT) */
+    [data-testid="stSidebar"] {{
+        background-color: #202123 !important;
+        border-right: 1px solid #444;
     }}
     
     /* Nama AI di kanan atas */
@@ -63,40 +65,61 @@ st.markdown(f"""
         border-radius: 20px;
     }}
     
-    /* Bikin bubble chatnya transparan dan rapi */
+    /* Ilangin kotak/avatar bawaan chat */
     [data-testid="stChatMessage"] {{
         background-color: transparent !important;
         border: none !important;
         padding: 0 !important;
+        margin-bottom: 20px;
+    }}
+    [data-testid="stChatMessageAvatar"] {{
+        display: none !important;
     }}
     
-    /* Bubble User */
-    [data-testid="stChatMessage"]:has(div[data-testid="stMarkdownContainer"] p:nth-child(1)) {{
-        /* Trik CSS buat bedain user & AI susah, jadi kita bikin seragam aja */
-    }}
-    
-    /* Teks chat biar putih bersih */
+    /* Teks chat */
     p, div, span {{
         color: #ffffff !important;
         font-family: 'Inter', sans-serif;
+        font-size: 16px;
     }}
     
-    /* Kolom input di bawah */
+    /* Input chat di bawah */
     .stChatInput {{
         position: fixed;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        width: 90%;
+        width: 80%;
         max-width: 800px;
         background-color: #2f2f2f;
         border-radius: 15px;
         z-index: 999;
     }}
+    
+    /* Ngilangin outline merah/kuning saat klik */
+    *:focus {{
+        outline: none !important;
+        box-shadow: none !important;
+    }}
+    .stChatInput textarea {{
+        border: none !important;
+    }}
 </style>
-<div class="ai-name">Ambatron</div>
+<div class="ai-name">🤖 Ambatron</div>
 """, unsafe_allow_html=True)
 
+# --- SIDEBAR (MENU KIRI) ---
+with st.sidebar:
+    st.markdown("### 🤖 Ambatron Chat")
+    st.button("➕ New Chat", use_container_width=True)
+    st.markdown("---")
+    st.markdown("**Riwayat Chat**")
+    st.markdown("- Perbedaan Rokok & Vape\n- Coding Python\n- Resep Makanan")
+    st.markdown("---")
+    st.markdown("**Pengaturan**")
+    st.button("⚙️ Settings", use_container_width=True)
+
+# --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
 @st.cache_resource
