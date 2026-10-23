@@ -7,7 +7,8 @@ from rag.query import Assistant
 from rag.generate import answer
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Ambatron AI", layout="wide", initial_sidebar_state="expanded")
+# Kita sembunyiin sidebar bawaan biar ga ada tombol panah bawaan
+st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="collapsed")
 
 # --- FUNGSI BACKGROUND ---
 def get_base64_of_bin_file(bin_file):
@@ -25,10 +26,12 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     
-    /* Sembunyiin header bawaan Streamlit (tapi kita butuh tombol panahnya) */
+    /* Sembunyiin semua header bawaan Streamlit */
     #MainMenu {{visibility: hidden;}}
-    header {{background: transparent !important;}}
+    header {{display: none !important;}}
     footer {{visibility: hidden;}}
+    [data-testid="stSidebarNav"] {{display: none;}}
+    [data-testid="collapsedControl"] {{display: none !important;}}
     
     /* Background */
     .stApp {{
@@ -42,19 +45,29 @@ st.markdown(f"""
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    /* Sidebar Kaca */
-    [data-testid="stSidebar"] {{
-        background: rgba(20, 20, 20, 0.9) !important;
-        backdrop-filter: blur(20px) !important;
-        border-right: 1px solid rgba(255,255,255,0.1) !important;
+    /* HEADER BAR SOLID */
+    .custom-header {{
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background: rgba(10, 10, 10, 0.95); /* Warna hitam pekat */
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Garis pembatas */
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 15px; z-index: 1000;
+        font-family: 'Inter', sans-serif;
     }}
     
-    /* Header Title di Tengah */
-    .app-header {{
-        position: fixed; top: 10px; left: 0; width: 100%;
-        text-align: center; color: white; font-family: 'Inter'; font-weight: 600; font-size: 20px;
-        z-index: 1000; pointer-events: none;
+    .header-btn {{
+        color: #ccc; font-size: 24px; text-decoration: none; cursor: pointer;
+        background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 8px;
     }}
+    .header-btn:hover {{ color: #fff; background: rgba(255, 255, 255, 0.2); }}
+    
+    .header-title {{
+        color: #fff; font-weight: 600; font-size: 18px; display: flex; align-items: center; gap: 8px;
+    }}
+
+    /* Jarak biar chat ga ketutup header */
+    .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
     /* Bubble Chat */
     .chat-bubble-user {{
@@ -77,17 +90,23 @@ st.markdown(f"""
     }}
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
-    
-    /* Tombol Sidebar Menu */
-    .stButton button {{
-        width: 100%; text-align: left; background: transparent !important; 
-        color: white !important; border: none !important; padding: 10px !important;
-    }}
-    .stButton button:hover {{ background: rgba(255,255,255,0.1) !important; }}
-</style>
 
-<!-- Judul di Tengah Atas -->
-<div class="app-header">🤖 Ambatron</div>
+    /* OVERLAY SIDEBAR (GESER) */
+    .history-overlay {{
+        position: fixed; top: 60px; left: 0; width: 280px; height: calc(100vh - 60px);
+        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px);
+        z-index: 1001; padding: 20px; overflow-y: auto;
+        border-right: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        transition: transform 0.3s ease;
+    }}
+    .history-item {{
+        display: block; color: #ccc; text-decoration: none; padding: 10px;
+        border-radius: 8px; margin-bottom: 8px; font-family: 'Inter'; font-size: 14px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }}
+    .history-item:hover {{ background: rgba(255,255,255,0.1); color: white; }}
+</style>
 """, unsafe_allow_html=True)
 
 # --- STATE MANAGEMENT ---
@@ -95,27 +114,46 @@ if "chat_sessions" not in st.session_state:
     st.session_state.chat_sessions = {}
 if "current_chat_id" not in st.session_state:
     st.session_state.current_chat_id = None
+if "show_history" not in st.session_state:
+    st.session_state.show_history = False
 
-# --- SIDEBAR MENU (Riwayat) ---
-with st.sidebar:
-    st.markdown("<h2 style='color:white; font-family:Inter;'>🤖 Ambatron AI</h2>", unsafe_allow_html=True)
-    
-    # Tombol New Chat
-    if st.button("➕ Mulai Chat Baru", key="new_chat_btn"):
+# --- LOGIKA KLIK HEADER (PAKAI QUERY PARAMS BIAR GA REFRESH) ---
+query_params = st.query_params
+if "action" in query_params:
+    if query_params["action"] == "toggle_history":
+        st.session_state.show_history = not st.session_state.show_history
+    elif query_params["action"] == "new_chat":
         st.session_state.current_chat_id = None
-        st.rerun()
-        
-    st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#aaa; font-family:Inter; font-size:14px;'>Riwayat Chat</p>", unsafe_allow_html=True)
+        st.session_state.show_history = False
+    elif query_params["action"].startswith("load_"):
+        chat_id = query_params["action"].replace("load_", "")
+        st.session_state.current_chat_id = chat_id
+        st.session_state.show_history = False
+    
+    st.query_params.clear()
+    st.rerun()
 
-    # List Riwayat
+# --- HEADER BAR CUSTOM ---
+st.markdown(f"""
+<div class="custom-header">
+    <a href="?action=toggle_history" target="_self" class="header-btn">☰</a>
+    <div class="header-title">🤖 Ambatron</div>
+    <a href="?action=new_chat" target="_self" class="header-btn">📝</a>
+</div>
+""", unsafe_allow_html=True)
+
+# --- RENDER OVERLAY HISTORY ---
+if st.session_state.show_history:
+    st.markdown('<div class="history-overlay">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color:white; font-family:Inter;'>Riwayat Chat</h3>", unsafe_allow_html=True)
+    
     if not st.session_state.chat_sessions:
-        st.markdown("<p style='color:#666; font-size:12px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#aaa; font-size:14px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
     else:
         for chat_id, data in reversed(list(st.session_state.chat_sessions.items())):
-            if st.button(f"💬 {data['title']}", key=f"load_{chat_id}"):
-                st.session_state.current_chat_id = chat_id
-                st.rerun()
+            st.markdown(f'<a href="?action=load_{chat_id}" target="_self" class="history-item">💬 {data["title"]}</a>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
