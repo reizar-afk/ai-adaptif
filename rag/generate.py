@@ -1,15 +1,18 @@
-
 import os
+from groq import Groq
 from query import Assistant
-from google import genai
 
 def answer(assistant, question, user_id):
     ctx = assistant.build_context(question, user_id)
     prompt = f"Konteks:\n{ctx['context']}\n\nPertanyaan: {ctx['question']}"
     
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-    response = client.models.generate_content(
-        model="gemini-1.5-flash-8b", 
-        contents=prompt,
+    # Panggil Groq
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": "Kamu adalah asisten AI yang pintar dan ramah. Jawab dalam bahasa Indonesia."},
+            {"role": "user", "content": prompt}
+        ],
+        model="llama-3.3-70b-versatile",
     )
-    return response.text
+    return chat_completion.choices[0].message.content
