@@ -5,8 +5,7 @@ import base64
 from rag.query import Assistant
 from rag.generate import answer
 
-# --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Ambatron AI", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="collapsed")
 
 # --- FUNGSI BACKGROUND ---
 def get_base64_of_bin_file(bin_file):
@@ -19,100 +18,97 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS TINGKAT DEWA (FIX IKON & TAMPILAN) ---
+# --- CSS TINGKAT DEWA (HEADER CHATGPT) ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
-    #MainMenu {{visibility: hidden;}}
-    header {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
+    /* Sembunyiin elemen bawaan */
+    #MainMenu, header, footer {{visibility: hidden;}}
     
+    /* Background */
     .stApp {{
         background-image: url("data:image/jpeg;base64,{img_base64}");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }}
-    
     .stApp::before {{
         content: "";
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.65); /* Overlay dibikin lebih transparan biar Gojo-nya kelihatan */
+        background: rgba(0, 0, 0, 0.6);
         z-index: -1;
     }}
     
-    /* SIDEBAR KACA */
-    [data-testid="stSidebar"] {{
-        background: rgba(20, 20, 20, 0.7) !important;
-        backdrop-filter: blur(20px) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    /* Sembunyiin sidebar bawaan Streamlit */
+    [data-testid="stSidebar"] {{ display: none !important; }}
+    
+    /* HEADER BAR MELAYANG (Mirip ChatGPT) */
+    .chatgpt-header {{
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 60px;
+        background: rgba(20, 20, 20, 0.8);
+        backdrop-filter: blur(15px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        z-index: 1000;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }}
+    .header-left {{ display: flex; align-items: center; gap: 15px; }}
+    .header-icon {{
+        color: #ccc;
+        font-size: 20px;
+        cursor: pointer;
+        text-decoration: none;
+    }}
+    .header-icon:hover {{ color: #fff; }}
+    .header-title {{
+        color: #fff;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 16px;
     }}
     
-    /* HILANGIN TOTAL IKON MERAH/ORANGE (AVATAR) */
-    [data-testid="stChatMessageAvatar"] {{
-        display: none !important;
+    /* Jarak biar chat ga ketutup header */
+    .block-container {{
+        padding-top: 80px !important;
+        padding-bottom: 100px !important;
+        max-width: 800px;
     }}
     
-    /* ILANGIN KOTAK HITAM BAWAAN STREAMLIT */
-    [data-testid="stChatMessage"] {{
-        background-color: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        margin-bottom: 10px;
-        animation: fadeIn 0.3s ease-in-out;
-    }}
-    
-    @keyframes fadeIn {{
-        from {{ opacity: 0; transform: translateY(5px); }}
-        to {{ opacity: 1; transform: translateY(0); }}
-    }}
-    
-    /* BUBBLE CHAT USER (BIRU) */
+    /* BUBBLE CHAT USER */
     .chat-bubble-user {{
         background: rgba(0, 100, 255, 0.8);
         padding: 12px 18px;
         border-radius: 20px 20px 5px 20px;
         display: inline-block;
-        max-width: 80%;
+        max-width: 85%;
         float: right;
         clear: both;
         color: white;
         font-family: 'Inter', sans-serif;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }}
     
-    /* BUBBLE CHAT AI (GELAP) */
+    /* BUBBLE CHAT AI */
     .chat-bubble-ai {{
-        background: rgba(50, 50, 50, 0.8);
+        background: rgba(40, 40, 40, 0.9);
         padding: 12px 18px;
         border-radius: 20px 20px 20px 5px;
         display: inline-block;
-        max-width: 80%;
+        max-width: 85%;
         float: left;
         clear: both;
         color: #ececec;
         font-family: 'Inter', sans-serif;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         border: 1px solid rgba(255,255,255,0.1);
         box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }}
-    
-    /* NAMA AI DI KANAN ATAS */
-    .ai-name {{
-        position: fixed;
-        top: 15px;
-        right: 25px;
-        color: #fff;
-        font-weight: 600;
-        font-size: 16px;
-        z-index: 1000;
-        background: rgba(255,255,255,0.1);
-        padding: 6px 15px;
-        border-radius: 20px;
-        backdrop-filter: blur(10px);
     }}
     
     /* INPUT CHAT BAWAH */
@@ -121,40 +117,42 @@ st.markdown(f"""
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        width: 75%;
+        width: 90%;
         max-width: 800px;
-        background: rgba(30, 30, 30, 0.8) !important;
+        background: rgba(40, 40, 40, 0.9) !important;
         backdrop-filter: blur(15px) !important;
-        border-radius: 25px;
-        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 15px;
+        border: none !important;
         z-index: 999;
     }}
-    
     .stChatInput textarea {{
         border: none !important;
         background: transparent !important;
         color: white !important;
     }}
-    
-    /* NGILANGIN GARIS MERAH DI INPUT */
     *:focus {{ outline: none !important; box-shadow: none !important; }}
 </style>
-<div class="ai-name">🤖 Ambatron</div>
+
+<!-- HEADER BAR -->
+<div class="chatgpt-header">
+    <div class="header-left">
+        <!-- Tombol Riwayat (Kiri) -->
+        <a href="?menu=history" target="_self" class="header-icon" title="Riwayat Chat">☰</a>
+        <span class="header-title">🤖 Ambatron</span>
+    </div>
+    <!-- Tombol Chat Baru (Kanan) -->
+    <a href="?menu=new" target="_self" class="header-icon" title="Mulai Chat Baru">✏️</a>
+</div>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR MENU ---
-with st.sidebar:
-    st.markdown("### 🤖 Ambatron AI")
-    st.button("➕ Mulai Chat Baru", use_container_width=True)
-    st.markdown("---")
-    st.markdown("**Riwayat Chat**")
-    # Dummy riwayat
-    st.markdown("💬 Perbedaan Rokok & Vape")
-    st.markdown("💻 Cara Bikin Loop Python")
-    st.markdown("📝 Resep Nasi Goreng")
-    st.markdown("---")
-    st.markdown("**Pengaturan**")
-    st.button("⚙️ Buka Pengaturan", use_container_width=True)
+# --- LOGIKA MENU RIWAYAT / CHAT BARU ---
+query_params = st.query_params
+if "menu" in query_params:
+    if query_params["menu"] == "history":
+        st.info("📜 **Riwayat Chat:**\n- Perbedaan Rokok & Vape\n- Coding Python\n- Resep Makanan")
+    elif query_params["menu"] == "new":
+        st.session_state.messages = [] # Kosongin chat
+        st.success("✨ Chat baru dimulai!")
 
 # --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
@@ -169,15 +167,14 @@ assistant = load_ai()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- RENDER CHAT ---
+# Tampilin Chat
 for message in st.session_state.messages:
-    # Kita pake st.empty() biar bener-bener ga nge-render avatar
     if message["role"] == "user":
         st.markdown(f'<div class="chat-bubble-user">{message["content"]}</div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div class="chat-bubble-ai">{message["content"]}</div>', unsafe_allow_html=True)
 
-# --- INPUT CHAT ---
+# Input Chat
 if prompt := st.chat_input("Tanya apa aja..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.markdown(f'<div class="chat-bubble-user">{prompt}</div>', unsafe_allow_html=True)
