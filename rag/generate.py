@@ -13,6 +13,6 @@ def answer(assistant, question, user_id):
             {"role": "system", "content": "Kamu adalah asisten AI yang pintar dan ramah. Jawab dalam bahasa Indonesia."},
             {"role": "user", "content": prompt}
         ],
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
     )
     return chat_completion.choices[0].message.content
