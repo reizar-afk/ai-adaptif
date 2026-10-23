@@ -6,7 +6,7 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-# Paksa layout pakai sidebar
+# --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Ambatron AI", layout="wide", initial_sidebar_state="expanded")
 
 # --- FUNGSI BACKGROUND ---
@@ -20,17 +20,17 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS ---
+# --- CSS TINGKAT DEWA ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     
-    /* Sembunyiin header bawaan Streamlit */
+    /* Sembunyiin header bawaan Streamlit (tapi kita butuh tombol panahnya) */
     #MainMenu {{visibility: hidden;}}
-    header {{visibility: hidden;}}
+    header {{background: transparent !important;}}
     footer {{visibility: hidden;}}
     
-    /* Background Gojo */
+    /* Background */
     .stApp {{
         background-image: url("data:image/jpeg;base64,{img_base64}");
         background-size: cover;
@@ -42,26 +42,18 @@ st.markdown(f"""
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    /* Sidebar Kaca (Glassmorphism) */
+    /* Sidebar Kaca */
     [data-testid="stSidebar"] {{
-        background: rgba(20, 20, 20, 0.85) !important;
-        backdrop-filter: blur(15px) !important;
+        background: rgba(20, 20, 20, 0.9) !important;
+        backdrop-filter: blur(20px) !important;
         border-right: 1px solid rgba(255,255,255,0.1) !important;
     }}
     
-    /* Tombol Sidebar */
-    .stButton button {{
-        width: 100%;
-        background-color: transparent !important;
-        color: white !important;
-        border: none !important;
-        text-align: left !important;
-        padding: 10px !important;
-        border-radius: 5px !important;
-        transition: 0.2s;
-    }}
-    .stButton button:hover {{
-        background-color: rgba(255,255,255,0.1) !important;
+    /* Header Title di Tengah */
+    .app-header {{
+        position: fixed; top: 10px; left: 0; width: 100%;
+        text-align: center; color: white; font-family: 'Inter'; font-weight: 600; font-size: 20px;
+        z-index: 1000; pointer-events: none;
     }}
     
     /* Bubble Chat */
@@ -85,7 +77,17 @@ st.markdown(f"""
     }}
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
+    
+    /* Tombol Sidebar Menu */
+    .stButton button {{
+        width: 100%; text-align: left; background: transparent !important; 
+        color: white !important; border: none !important; padding: 10px !important;
+    }}
+    .stButton button:hover {{ background: rgba(255,255,255,0.1) !important; }}
 </style>
+
+<!-- Judul di Tengah Atas -->
+<div class="app-header">🤖 Ambatron</div>
 """, unsafe_allow_html=True)
 
 # --- STATE MANAGEMENT ---
@@ -94,11 +96,11 @@ if "chat_sessions" not in st.session_state:
 if "current_chat_id" not in st.session_state:
     st.session_state.current_chat_id = None
 
-# --- SIDEBAR MENU ---
+# --- SIDEBAR MENU (Riwayat) ---
 with st.sidebar:
     st.markdown("<h2 style='color:white; font-family:Inter;'>🤖 Ambatron AI</h2>", unsafe_allow_html=True)
     
-    # Tombol Chat Baru
+    # Tombol New Chat
     if st.button("➕ Mulai Chat Baru", key="new_chat_btn"):
         st.session_state.current_chat_id = None
         st.rerun()
@@ -130,10 +132,6 @@ current_messages = []
 if st.session_state.current_chat_id and st.session_state.current_chat_id in st.session_state.chat_sessions:
     current_messages = st.session_state.chat_sessions[st.session_state.current_chat_id]["messages"]
 
-# Judul di tengah atas
-st.markdown("<h3 style='text-align: center; color: white; font-family: Inter;'>🤖 Ambatron</h3>", unsafe_allow_html=True)
-
-# Tampilin Bubble Chat
 for message in current_messages:
     if message["role"] == "user":
         st.markdown(f'<div class="chat-bubble-user">{message["content"]}</div>', unsafe_allow_html=True)
