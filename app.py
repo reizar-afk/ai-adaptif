@@ -97,7 +97,7 @@ st.markdown(f"""
 <div class="ai-name">Ambatron</div>
 """, unsafe_allow_html=True)
 
-os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY")
+os.environ["GROQ_API_KEY"] = os.getenv("GEMINI_API_KEY")
 
 @st.cache_resource
 def load_ai():
