@@ -6,10 +6,9 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-# 1. Set page config (pakai sidebar bawaan)
 st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="expanded")
 
-# 2. Fungsi Background
+# --- FUNGSI BACKGROUND ---
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
@@ -20,7 +19,7 @@ try:
 except:
     img_base64 = ""
 
-# 3. CSS (Tampilan persis kayak SS lu)
+# --- CSS (FIX TEKS KELUAR KOTAK) ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -70,11 +69,26 @@ st.markdown(f"""
         background: linear-gradient(135deg, #0052D4, #4364F7); padding: 12px 18px; border-radius: 20px 20px 4px 20px;
         display: inline-block; max-width: 85%; float: right; clear: both; color: white;
         margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        word-wrap: break-word; /* Biar teks panjang turun ke bawah */
     }}
     .chat-bubble-ai {{
         background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 20px 20px 20px 4px;
         display: inline-block; max-width: 85%; float: left; clear: both; color: #ececec;
         margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        overflow-x: auto; /* Biar tabel/kode bisa di-scroll, ga keluar kotak */
+        word-wrap: break-word; /* Biar teks panjang turun ke bawah */
+    }}
+    
+    /* Bikin tabel di dalam chat biar rapi */
+    .chat-bubble-ai table {{
+        width: 100% !important;
+        border-collapse: collapse;
+        margin: 10px 0;
+    }}
+    .chat-bubble-ai th, .chat-bubble-ai td {{
+        border: 1px solid rgba(255,255,255,0.2);
+        padding: 8px;
+        text-align: left;
     }}
     
     .stChatInput {{
@@ -90,35 +104,36 @@ st.markdown(f"""
 <div class="custom-title">🤖 Ambatron</div>
 """, unsafe_allow_html=True)
 
-# 4. State Management
+# --- LOGIKA STATE ---
 if "chat_sessions" not in st.session_state:
-    st.session_state.chat_sessions = {} # Format: {id: {"title": "...", "messages": [...]}}
+    st.session_state.chat_sessions = {}
 if "current_chat_id" not in st.session_state:
     st.session_state.current_chat_id = None
+if "is_new_chat" not in st.session_state:
+    st.session_state.is_new_chat = True
 
-# 5. SIDEBAR MENU
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("<h3 style='color:white;'>🤖 Ambatron AI</h3>", unsafe_allow_html=True)
     
-    # --- LOGIKA TOMBOL CHAT BARU ---
     if st.button("➕ Mulai Chat Baru", key="new_chat_sidebar"):
-        st.session_state.current_chat_id = None # Reset ke kosong (mulai chat baru)
-        st.rerun() # Refresh biar layar bersih
+        st.session_state.current_chat_id = None
+        st.session_state.is_new_chat = True
+        st.rerun()
         
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
     st.markdown("<p style='color:#aaa;'>Riwayat Chat</p>", unsafe_allow_html=True)
     
-    # --- LOGIKA RIWAYAT CHAT ---
     if not st.session_state.chat_sessions:
         st.markdown("<p style='color:#666; font-size:12px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
     else:
-        # Munculin list riwayat dari yang paling baru
         for cid, cdata in reversed(list(st.session_state.chat_sessions.items())):
             if st.button(f"💬 {cdata['title']}", key=f"load_{cid}"):
-                st.session_state.current_chat_id = cid # Pindah ke chat lama
+                st.session_state.current_chat_id = cid
+                st.session_state.is_new_chat = False
                 st.rerun()
 
-# 6. Logika AI
+# --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
 try:
@@ -131,9 +146,9 @@ except Exception as e:
     st.warning("⚠️ Database sedang sibuk. Klik 'Manage app' -> 'Reboot app' sekali lagi.")
     st.stop()
 
-# 7. Render Chat Aktif
+# --- RENDER CHAT ---
 msgs = []
-if st.session_state.current_chat_id and st.session_state.current_chat_id in st.session_state.chat_sessions:
+if not st.session_state.is_new_chat and st.session_state.current_chat_id and st.session_state.current_chat_id in st.session_state.chat_sessions:
     msgs = st.session_state.chat_sessions[st.session_state.current_chat_id]["messages"]
 
 for m in msgs:
@@ -142,26 +157,21 @@ for m in msgs:
     else:
         st.markdown(f'<div class="chat-bubble-ai">{m["content"]}</div>', unsafe_allow_html=True)
 
-# 8. Input Chat
+# --- INPUT CHAT ---
 if prompt := st.chat_input("Tanya apa aja..."):
-    # Kalau lagi ga ada chat aktif, bikin sesi baru
-    if not st.session_state.current_chat_id:
+    if st.session_state.is_new_chat or not st.session_state.current_chat_id:
         new_id = str(uuid.uuid4())[:6]
         st.session_state.current_chat_id = new_id
-        # Ambil 20 huruf pertama sebagai judul riwayat
+        st.session_state.is_new_chat = False
         title = prompt[:20] + ("..." if len(prompt) > 20 else "")
         st.session_state.chat_sessions[new_id] = {"title": title, "messages": []}
     
     chat_id = st.session_state.current_chat_id
-    
-    # Simpan pesan user
     st.session_state.chat_sessions[chat_id]["messages"].append({"role": "user", "content": prompt})
     st.markdown(f'<div class="chat-bubble-user">{prompt}</div>', unsafe_allow_html=True)
 
-    # Generate jawaban AI
     with st.spinner("..."):
         res = answer(assistant, prompt, "user1")
         st.markdown(f'<div class="chat-bubble-ai">{res}</div>', unsafe_allow_html=True)
     
-    # Simpan jawaban AI
     st.session_state.chat_sessions[chat_id]["messages"].append({"role": "assistant", "content": res})
