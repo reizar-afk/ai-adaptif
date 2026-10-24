@@ -6,7 +6,7 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-st.set_page_config(page_title="Ambatron AI", page_icon="🤖", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="expanded")
 
 # --- FUNGSI BACKGROUND ---
 def get_base64_of_bin_file(bin_file):
@@ -19,7 +19,7 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS (FIX TEKS KELUAR KOTAK) ---
+# --- CSS (CUMA NAMBAH HEADER TENGAH) ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -45,10 +45,18 @@ st.markdown(f"""
     
     .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
+    /* HEADER BARU (TULISAN TENGAH) */
     .custom-title {{
-        position: fixed; top: 15px; left: 0; width: 100%; text-align: center;
-        color: white; font-family: 'Inter'; font-weight: 600; font-size: 20px;
-        z-index: 990; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        position: fixed; top: 10px; left: 0; width: 100%; text-align: center;
+        z-index: 990; pointer-events: none;
+    }}
+    .custom-title h1 {{
+        color: white; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 24px;
+        margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }}
+    .custom-title p {{
+        color: #aaa; font-family: 'Inter', sans-serif; font-size: 12px;
+        margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }}
 
     [data-testid="stSidebar"] {{
@@ -69,27 +77,16 @@ st.markdown(f"""
         background: linear-gradient(135deg, #0052D4, #4364F7); padding: 12px 18px; border-radius: 20px 20px 4px 20px;
         display: inline-block; max-width: 85%; float: right; clear: both; color: white;
         margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        word-wrap: break-word; /* Biar teks panjang turun ke bawah */
+        word-wrap: break-word;
     }}
     .chat-bubble-ai {{
         background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 20px 20px 20px 4px;
         display: inline-block; max-width: 85%; float: left; clear: both; color: #ececec;
         margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        overflow-x: auto; /* Biar tabel/kode bisa di-scroll, ga keluar kotak */
-        word-wrap: break-word; /* Biar teks panjang turun ke bawah */
+        overflow-x: auto; word-wrap: break-word;
     }}
-    
-    /* Bikin tabel di dalam chat biar rapi */
-    .chat-bubble-ai table {{
-        width: 100% !important;
-        border-collapse: collapse;
-        margin: 10px 0;
-    }}
-    .chat-bubble-ai th, .chat-bubble-ai td {{
-        border: 1px solid rgba(255,255,255,0.2);
-        padding: 8px;
-        text-align: left;
-    }}
+    .chat-bubble-ai table {{ width: 100% !important; border-collapse: collapse; margin: 10px 0; }}
+    .chat-bubble-ai th, .chat-bubble-ai td {{ border: 1px solid rgba(255,255,255,0.2); padding: 8px; text-align: left; }}
     
     .stChatInput {{
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -101,16 +98,17 @@ st.markdown(f"""
     *:focus {{ outline: none !important; box-shadow: none !important; }}
 </style>
 
-<div class="custom-title">🤖 Ambatron</div>
+<!-- TULISAN TENGAH YANG BARU -->
+<div class="custom-title">
+    <h1>🤖 Ambatron AI</h1>
+    <p>Development By Reii_Stru</p>
+</div>
 """, unsafe_allow_html=True)
 
 # --- LOGIKA STATE ---
-if "chat_sessions" not in st.session_state:
-    st.session_state.chat_sessions = {}
-if "current_chat_id" not in st.session_state:
-    st.session_state.current_chat_id = None
-if "is_new_chat" not in st.session_state:
-    st.session_state.is_new_chat = True
+if "chat_sessions" not in st.session_state: st.session_state.chat_sessions = {}
+if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
+if "is_new_chat" not in st.session_state: st.session_state.is_new_chat = True
 
 # --- SIDEBAR ---
 with st.sidebar:
