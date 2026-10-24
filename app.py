@@ -6,7 +6,7 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Ambatron AI", page_icon="🤖", layout="centered", initial_sidebar_state="expanded")
 
 # --- FUNGSI BACKGROUND ---
 def get_base64_of_bin_file(bin_file):
