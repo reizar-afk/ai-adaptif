@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import yaml
 import base64
-import uuid
+import streamlit.components.v1 as components
 from rag.query import Assistant
 from rag.generate import answer
 
@@ -19,148 +19,60 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS TINGKAT DEWA ---
+# --- CSS ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    
-    #MainMenu, header, footer, [data-testid="stSidebarNav"], [data-testid="collapsedControl"] {{
-        display: none !important; visibility: hidden !important;
-    }}
+    #MainMenu, header, footer, [data-testid="stSidebar"], [data-testid="collapsedControl"] {{ display: none !important; }}
     
     .stApp {{
         background-image: url("data:image/jpeg;base64,{img_base64}");
         background-size: cover; background-position: center; background-attachment: fixed;
+        font-family: 'Inter', sans-serif;
     }}
     .stApp::before {{
         content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    /* HEADER BAR PALSU (HTML) */
-    .fake-header {{
-        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-        background: rgba(10, 10, 10, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0 20px; z-index: 990;
-    }}
-    .header-title {{ color: #fff; font-family: 'Inter'; font-weight: 600; font-size: 18px; }}
+    .block-container {{ padding-top: 60px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
-    /* TOMBOL ASLI STREAMLIT YANG DISEMBUNYIIN DI ATAS HEADER */
-    div[data-testid="column"] {{
-        position: fixed !important; top: 0 !important; z-index: 1000 !important;
-        height: 60px !important; display: flex; align-items: center !important;
-    }}
-    div[data-testid="column"]:nth-of-type(1) {{ left: 10px !important; }}
-    div[data-testid="column"]:nth-of-type(2) {{ right: 10px !important; }}
-    
-    /* Bikin tombolnya invisible tapi tetep bisa diklik */
-    div[data-testid="column"] button {{
-        background: rgba(255,255,255,0.1) !important; color: white !important;
-        border: none !important; border-radius: 8px !important;
-        padding: 5px 12px !important; font-size: 20px !important;
-    }}
-    div[data-testid="column"] button:hover {{ background: rgba(255,255,255,0.2) !important; }}
-
-    .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
-    
-    /* Bubble Chat */
     .chat-bubble-user {{
-        background: rgba(0, 100, 255, 0.8); padding: 12px 18px; border-radius: 20px 20px 5px 20px;
+        background: linear-gradient(135deg, #0052D4, #4364F7); padding: 12px 18px; border-radius: 20px 20px 4px 20px;
         display: inline-block; max-width: 85%; float: right; clear: both; color: white;
-        font-family: 'Inter'; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }}
     .chat-bubble-ai {{
-        background: rgba(40, 40, 40, 0.9); padding: 12px 18px; border-radius: 20px 20px 20px 5px;
+        background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 20px 20px 20px 4px;
         display: inline-block; max-width: 85%; float: left; clear: both; color: #ececec;
-        font-family: 'Inter'; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }}
     
-    /* Input Chat */
     .stChatInput {{
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        width: 90%; max-width: 800px; background: rgba(40, 40, 40, 0.9) !important;
-        backdrop-filter: blur(15px) !important; border-radius: 15px; border: none !important; z-index: 999;
+        width: 85%; max-width: 800px; background: rgba(25, 25, 25, 0.8) !important;
+        backdrop-filter: blur(15px) !important; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+        z-index: 999;
     }}
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
-
-    /* OVERLAY SIDEBAR (GESER) */
-    .history-overlay {{
-        position: fixed; top: 60px; left: 0; width: 280px; height: calc(100vh - 60px);
-        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px);
-        z-index: 1001; padding: 20px; overflow-y: auto;
-        border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-    }}
-    .stButton button {{
-        width: 100%; text-align: left; background: rgba(255,255,255,0.05) !important; 
-        color: white !important; border: none !important; padding: 10px !important;
-        border-radius: 8px !important; margin-bottom: 5px;
-    }}
-    .stButton button:hover {{ background: rgba(255,255,255,0.15) !important; }}
-</style>
-
-<!-- HEADER VISUAL -->
-<div class="fake-header">
-    <div style="width: 40px;"></div> <!-- Spacer Kiri -->
-    <div class="header-title">🤖 Ambatron</div>
-    <div style="width: 40px;"></div> <!-- Spacer Kanan -->
-</div>
-""", unsafe_allow_html=True)
-
-# --- STATE MANAGEMENT ---
-if "chat_sessions" not in st.session_state: st.session_state.chat_sessions = {}
-if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
-if "show_history" not in st.session_state: st.session_state.show_history = False
-
-# --- TOMBOL ASLI STREAMLIT (DISEMBUNYIIN DI HEADER) ---
-col1, col2 = st.columns([1, 10])
-with col1:
-    # Tombol ☰ (Buka Riwayat)
-    if st.button("☰", key="btn_history"):
-        st.session_state.show_history = not st.session_state.show_history
-        st.rerun()
-
-with col2:
-    # Tombol 📝 (Chat Baru) - kita pake kolom kosong biar posisinya di kanan
-    pass
-
-# Karena Streamlit column susah diatur ke kanan, kita pake trik floating button
-st.markdown("""
-<style>
-    /* Target tombol Chat Baru berdasarkan teksnya (trik CSS) */
-    div[data-testid="column"]:nth-of-type(2) button {
-        /* Ini bakal nangkep tombol Chat Baru kalau kita taruh di kolom 2 */
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- OVERLAY RIWAYAT ---
-if st.session_state.show_history:
-    st.markdown('<div class="history-overlay">', unsafe_allow_html=True)
-    st.markdown("<h3 style='color:white; font-family:Inter;'>Riwayat Chat</h3>", unsafe_allow_html=True)
+# --- TAMPILIN HTML HEADER (DARI FILE INDEX) ---
+try:
+    with open("index.html", "r", encoding="utf-8") as f:
+        html_header = f.read()
     
-    # Tombol Chat Baru di dalam Overlay
-    if st.button("➕ Mulai Chat Baru", key="btn_new_chat_sidebar"):
-        st.session_state.current_chat_id = None
-        st.session_state.show_history = False
-        st.rerun()
-        
-    st.markdown("---")
-    
-    if not st.session_state.chat_sessions:
-        st.markdown("<p style='color:#aaa; font-size:14px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
-    else:
-        for chat_id, data in reversed(list(st.session_state.chat_sessions.items())):
-            if st.button(f"💬 {data['title']}", key=f"load_{chat_id}"):
-                st.session_state.current_chat_id = chat_id
-                st.session_state.show_history = False
-                st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Bungkus pakai style biar posisinya nempel atas
+    full_html = f"""
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: rgba(10,10,10,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 1000; display: flex; align-items: center; padding: 0 20px;">
+        {html_header}
+    </div>
+    """
+    components.html(full_html, height=60, scrolling=False)
+except Exception as e:
+    st.error(f"Gagal load index.html: {e}")
 
 # --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
@@ -172,31 +84,23 @@ def load_ai():
 
 assistant = load_ai()
 
-# --- RENDER CHAT ---
-current_messages = []
-if st.session_state.current_chat_id and st.session_state.current_chat_id in st.session_state.chat_sessions:
-    current_messages = st.session_state.chat_sessions[st.session_state.current_chat_id]["messages"]
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-for message in current_messages:
+# --- RENDER CHAT ---
+for message in st.session_state.messages:
     if message["role"] == "user":
         st.markdown(f'<div class="chat-bubble-user">{message["content"]}</div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div class="chat-bubble-ai">{message["content"]}</div>', unsafe_allow_html=True)
 
-# --- INPUT CHAT ---
+# --- INPUT CHAT (PYTHON) ---
 if prompt := st.chat_input("Tanya apa aja..."):
-    if not st.session_state.current_chat_id:
-        new_id = str(uuid.uuid4())[:6]
-        st.session_state.current_chat_id = new_id
-        title = prompt[:25] + ("..." if len(prompt) > 25 else "")
-        st.session_state.chat_sessions[new_id] = {"title": title, "messages": []}
-    
-    chat_id = st.session_state.current_chat_id
-    st.session_state.chat_sessions[chat_id]["messages"].append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": prompt})
     st.markdown(f'<div class="chat-bubble-user">{prompt}</div>', unsafe_allow_html=True)
 
     with st.spinner("Ambatron sedang berpikir..."):
         response = answer(assistant, prompt, "user1")
         st.markdown(f'<div class="chat-bubble-ai">{response}</div>', unsafe_allow_html=True)
     
-    st.session_state.chat_sessions[chat_id]["messages"].append({"role": "assistant", "content": response})
+    st.session_state.messages.append({"role": "assistant", "content": response})
