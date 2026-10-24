@@ -6,7 +6,6 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-# --- KONFIGURASI ---
 st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="collapsed")
 
 # --- FUNGSI BACKGROUND ---
@@ -28,10 +27,7 @@ st.markdown(f"""
     /* Sembunyiin menu & footer Streamlit, TAPI header dibiarin biar tombol ☰ muncul */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
-    header {{
-        background: transparent !important;
-        z-index: 1000;
-    }}
+    header {{ background: transparent !important; z-index: 1000; }}
     
     /* Background */
     .stApp {{
@@ -84,7 +80,7 @@ st.markdown(f"""
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
     
-    /* JUDUL DI TENGAH ATAS (Header) */
+    /* JUDUL DI TENGAH ATAS */
     .custom-title {{
         position: fixed; top: 15px; left: 0; width: 100%; text-align: center;
         color: white; font-family: 'Inter'; font-weight: 600; font-size: 20px;
