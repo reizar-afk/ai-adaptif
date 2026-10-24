@@ -6,7 +6,7 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-# --- KONFIGURASI (PAKAI SIDEBAR BAWAAN) ---
+# --- KONFIGURASI ---
 st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="collapsed")
 
 # --- FUNGSI BACKGROUND ---
@@ -25,8 +25,13 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     
-    /* Sembunyiin header & footer bawaan */
-    #MainMenu, header, footer {{ visibility: hidden; }}
+    /* Sembunyiin menu & footer Streamlit, TAPI header dibiarin biar tombol ☰ muncul */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{
+        background: transparent !important;
+        z-index: 1000;
+    }}
     
     /* Background */
     .stApp {{
@@ -39,9 +44,10 @@ st.markdown(f"""
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    .block-container {{ padding-top: 20px !important; padding-bottom: 100px !important; max-width: 800px; }}
+    /* Jarak Chat */
+    .block-container {{ padding-top: 60px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
-    /* Sidebar Kaca */
+    /* SIDEBAR KACA */
     [data-testid="stSidebar"] {{
         background: rgba(20, 20, 20, 0.95) !important;
         backdrop-filter: blur(20px) !important;
@@ -77,18 +83,27 @@ st.markdown(f"""
     }}
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
+    
+    /* JUDUL DI TENGAH ATAS (Header) */
+    .custom-title {{
+        position: fixed; top: 15px; left: 0; width: 100%; text-align: center;
+        color: white; font-family: 'Inter'; font-weight: 600; font-size: 20px;
+        z-index: 990; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }}
 </style>
+
+<!-- Judul di Tengah Atas -->
+<div class="custom-title">🤖 Ambatron</div>
 """, unsafe_allow_html=True)
 
 # --- STATE ---
 if "chat_sessions" not in st.session_state: st.session_state.chat_sessions = {}
 if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
 
-# --- SIDEBAR MENU (RIWAYAT & CHAT BARU) ---
+# --- SIDEBAR MENU ---
 with st.sidebar:
     st.markdown("<h3 style='color:white;'>🤖 Ambatron AI</h3>", unsafe_allow_html=True)
     
-    # Tombol Chat Baru
     if st.button("➕ Mulai Chat Baru", key="new_chat_sidebar"):
         st.session_state.current_chat_id = None
         st.rerun()
@@ -96,7 +111,6 @@ with st.sidebar:
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
     st.markdown("<p style='color:#aaa;'>Riwayat Chat</p>", unsafe_allow_html=True)
     
-    # List Riwayat
     if not st.session_state.chat_sessions:
         st.markdown("<p style='color:#666; font-size:12px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
     else:
@@ -105,7 +119,7 @@ with st.sidebar:
                 st.session_state.current_chat_id = cid
                 st.rerun()
 
-# --- LOGIKA AI (ANTI ERROR) ---
+# --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
 try:
