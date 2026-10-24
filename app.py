@@ -19,7 +19,7 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS TINGKAT DEWA (HEADER FIX) ---
+# --- CSS ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -40,38 +40,8 @@ st.markdown(f"""
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    /* Jarak Chat */
-    .block-container {{ padding-top: 70px !important; padding-bottom: 100px !important; max-width: 800px; }}
+    .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
-    /* HEADER VISUAL (HTML MURNI) */
-    .custom-header {{
-        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-        background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 990;
-        display: flex; align-items: center; padding: 0 20px; box-sizing: border-box;
-    }}
-    .header-title {{ color: #fff; font-size: 18px; font-weight: 600; margin-left: 10px; flex-grow: 1; }}
-    .fake-btn {{ background: rgba(255,255,255,0.1); color: white; padding: 6px 15px; border-radius: 20px; font-size: 14px; }}
-    
-    /* TOMBOL ASLI STREAMLIT YANG KITA Sembunyiin DI ATAS HEADER */
-    /* Kita pake kolom buat nampung tombol, posisinya di-fix di atas */
-    div[data-testid="column"]:nth-of-type(1) {{
-        position: fixed !important; top: 10px !important; left: 10px !important; z-index: 1000 !important; width: 40px !important;
-    }}
-    div[data-testid="column"]:nth-of-type(2) {{
-        position: fixed !important; top: 10px !important; right: 15px !important; z-index: 1000 !important; width: 120px !important;
-    }}
-    
-    /* Transparanin tombol aslinya biar nyatu sama HTML */
-    div[data-testid="column"] button {{
-        background: transparent !important; border: none !important; color: white !important;
-        font-size: 24px !important; padding: 0 !important; width: 100% !important;
-    }}
-    div[data-testid="column"]:nth-of-type(2) button {{
-        font-size: 14px !important; background: rgba(255,255,255,0.1) !important; 
-        padding: 8px 15px !important; border-radius: 20px !important;
-    }}
-
     /* Bubble Chat */
     .chat-bubble-user {{
         background: linear-gradient(135deg, #0052D4, #4364F7); padding: 12px 18px; border-radius: 20px 20px 4px 20px;
@@ -94,22 +64,46 @@ st.markdown(f"""
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
 
-    /* SIDEBAR HISTORY OVERLAY */
+    /* HEADER PALSU */
+    .fake-header {{
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 990;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 20px; box-sizing: border-box;
+    }}
+    .fake-header .title {{ color: #fff; font-size: 18px; font-weight: 600; }}
+    
+    /* Tombol yang di-overlay di atas header */
+    div[data-testid="column"]:nth-of-type(1) {{
+        position: fixed !important; top: 12px !important; left: 15px !important; z-index: 1000 !important; width: 40px !important;
+    }}
+    div[data-testid="column"]:nth-of-type(2) {{
+        position: fixed !important; top: 12px !important; right: 15px !important; z-index: 1000 !important; width: 110px !important;
+    }}
+    div[data-testid="column"] button {{
+        background: transparent !important; border: none !important; color: white !important;
+        font-size: 24px !important; padding: 0 !important;
+    }}
+    div[data-testid="column"]:nth-of-type(2) button {{
+        font-size: 14px !important; background: rgba(255,255,255,0.1) !important; 
+        padding: 6px 12px !important; border-radius: 15px !important; width: 100% !important;
+    }}
+
+    /* OVERLAY HISTORY */
     .history-overlay {{
         position: fixed; top: 60px; left: 0; width: 280px; height: calc(100vh - 60px);
         background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px);
         z-index: 1001; padding: 20px; overflow-y: auto;
         border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 5px 0 15px rgba(0,0,0,0.5);
     }}
-    .history-item {{
-        color: white; padding: 10px; border-radius: 8px; margin-bottom: 5px;
-        background: rgba(255,255,255,0.05); display: block; text-decoration: none;
-    }}
 </style>
 
-<!-- HEADER VISUAL -->
-<div class="custom-header">
-    <div class="header-title" style="text-align: center; margin-right: 80px;">🤖 Ambatron</div>
+<!-- TAMPILAN HEADER -->
+<div class="fake-header">
+    <div style="width: 40px;"></div>
+    <div class="title">🤖 Ambatron</div>
+    <div style="width: 110px;"></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -118,17 +112,14 @@ if "chat_sessions" not in st.session_state: st.session_state.chat_sessions = {}
 if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
 if "show_history" not in st.session_state: st.session_state.show_history = False
 
-# --- TOMBOL ASLI (NEMPEL DI HEADER) ---
+# --- TOMBOL ASLI (DI-OVERLAY KE HEADER) ---
 col1, col2 = st.columns([1, 10])
-
 with col1:
     if st.button("☰", key="toggle_hist"):
         st.session_state.show_history = not st.session_state.show_history
         st.rerun()
-
 with col2:
-    # Tombol + Chat Baru (Kanan)
-    if st.button("+ Chat Baru", key="new_chat_btn"):
+    if st.button("+ Chat", key="new_chat_btn"):
         st.session_state.current_chat_id = None
         st.session_state.show_history = False
         st.rerun()
@@ -136,7 +127,7 @@ with col2:
 # --- OVERLAY HISTORY ---
 if st.session_state.show_history:
     st.markdown('<div class="history-overlay">', unsafe_allow_html=True)
-    st.markdown("<h3 style='color:white; font-family:Inter;'>Riwayat Chat</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:white;'>Riwayat Chat</h3>", unsafe_allow_html=True)
     
     if not st.session_state.chat_sessions:
         st.markdown("<p style='color:#aaa;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
@@ -146,16 +137,28 @@ if st.session_state.show_history:
                 st.session_state.current_chat_id = cid
                 st.session_state.show_history = False
                 st.rerun()
+    
+    # Tombol Tutup Manual (kalau klik blank space susah)
+    if st.button("❌ Tutup Riwayat", key="close_hist"):
+        st.session_state.show_history = False
+        st.rerun()
+        
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- LOGIKA AI ---
+# --- LOGIKA AI (FIX ERROR) ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
+# Pake fungsi cache yang bener biar ga error
 @st.cache_resource
-def load_ai():
-    return Assistant(yaml.safe_load(open('config.yaml')))
+def load_assistant():
+    cfg = yaml.safe_load(open('config.yaml'))
+    return Assistant(cfg)
 
-assistant = load_ai()
+try:
+    assistant = load_assistant()
+except Exception as e:
+    st.error(f"Gagal load database: {e}")
+    st.stop()
 
 # --- RENDER CHAT ---
 msgs = []
