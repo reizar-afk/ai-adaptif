@@ -19,15 +19,15 @@ try:
 except:
     img_base64 = ""
 
-# --- CSS ---
+# --- CSS TINGKAT DEWA ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     
-    /* Sembunyiin menu & footer Streamlit, TAPI header dibiarin biar tombol ☰ muncul */
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    header {{ background: transparent !important; z-index: 1000; }}
+    /* Sembunyiin SEMUA elemen bawaan Streamlit (Termasuk header panah) */
+    #MainMenu, header, footer, [data-testid="stSidebar"], [data-testid="collapsedControl"] {{
+        display: none !important; visibility: hidden !important;
+    }}
     
     /* Background */
     .stApp {{
@@ -41,22 +41,27 @@ st.markdown(f"""
     }}
     
     /* Jarak Chat */
-    .block-container {{ padding-top: 60px !important; padding-bottom: 100px !important; max-width: 800px; }}
+    .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
-    /* SIDEBAR KACA */
-    [data-testid="stSidebar"] {{
-        background: rgba(20, 20, 20, 0.95) !important;
-        backdrop-filter: blur(20px) !important;
-        border-right: 1px solid rgba(255,255,255,0.1) !important;
+    /* HEADER BAR SOLID (HTML MURNI) */
+    .solid-header {{
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background: rgba(10, 10, 10, 0.98); /* Hitam pekat */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Garis pembatas */
+        z-index: 990; display: flex; align-items: center; justify-content: center;
+    }}
+    .solid-header .title {{
+        color: #fff; font-family: 'Inter'; font-weight: 600; font-size: 18px;
     }}
     
-    /* Tombol Sidebar */
-    .stButton button {{
-        width: 100%; text-align: left; background: rgba(255,255,255,0.05) !important; 
-        color: white !important; border: none !important; padding: 10px !important;
-        border-radius: 8px !important; margin-bottom: 5px;
+    /* TOMBOL ☰ PYTHON YANG DI-OVERLAY KE HEADER */
+    div[data-testid="column"]:nth-of-type(1) {{
+        position: fixed !important; top: 12px !important; left: 15px !important; z-index: 1000 !important; width: 40px !important;
     }}
-    .stButton button:hover {{ background: rgba(255,255,255,0.15) !important; }}
+    div[data-testid="column"]:nth-of-type(1) button {{
+        background: rgba(255,255,255,0.1) !important; color: white !important;
+        border: none !important; border-radius: 8px !important; padding: 5px 10px !important; font-size: 20px !important;
+    }}
 
     /* Bubble Chat */
     .chat-bubble-user {{
@@ -79,41 +84,69 @@ st.markdown(f"""
     }}
     .stChatInput textarea {{ border: none !important; background: transparent !important; color: white !important; }}
     *:focus {{ outline: none !important; box-shadow: none !important; }}
-    
-    /* JUDUL DI TENGAH ATAS */
-    .custom-title {{
-        position: fixed; top: 15px; left: 0; width: 100%; text-align: center;
-        color: white; font-family: 'Inter'; font-weight: 600; font-size: 20px;
-        z-index: 990; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+
+    /* SIDEBAR KACA */
+    [data-testid="stSidebar"] {{
+        background: rgba(20, 20, 20, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        border-right: 1px solid rgba(255,255,255,0.1) !important;
+        z-index: 1002 !important;
     }}
+    .stButton button {{
+        width: 100%; text-align: left; background: rgba(255,255,255,0.05) !important; 
+        color: white !important; border: none !important; padding: 10px !important;
+        border-radius: 8px !important; margin-bottom: 5px;
+    }}
+    .stButton button:hover {{ background: rgba(255,255,255,0.15) !important; }}
 </style>
 
-<!-- Judul di Tengah Atas -->
-<div class="custom-title">🤖 Ambatron</div>
+<!-- HEADER VISUAL -->
+<div class="solid-header">
+    <div class="title">🤖 Ambatron</div>
+</div>
 """, unsafe_allow_html=True)
 
 # --- STATE ---
 if "chat_sessions" not in st.session_state: st.session_state.chat_sessions = {}
 if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
+if "show_history" not in st.session_state: st.session_state.show_history = False
 
-# --- SIDEBAR MENU ---
-with st.sidebar:
-    st.markdown("<h3 style='color:white;'>🤖 Ambatron AI</h3>", unsafe_allow_html=True)
-    
-    if st.button("➕ Mulai Chat Baru", key="new_chat_sidebar"):
-        st.session_state.current_chat_id = None
+# --- TOMBOL ASLI (NEMPEL DI HEADER) ---
+col1, col2 = st.columns([1, 10])
+with col1:
+    if st.button("☰", key="toggle_hist"):
+        st.session_state.show_history = not st.session_state.show_history
         st.rerun()
-        
-    st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#aaa;'>Riwayat Chat</p>", unsafe_allow_html=True)
+
+# --- SIDEBAR (HISTORY OVERLAY) ---
+if st.session_state.show_history:
+    st.markdown('<div class="history-overlay">', unsafe_allow_html=True)
     
-    if not st.session_state.chat_sessions:
-        st.markdown("<p style='color:#666; font-size:12px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
-    else:
-        for cid, cdata in reversed(list(st.session_state.chat_sessions.items())):
-            if st.button(f"💬 {cdata['title']}", key=f"load_{cid}"):
-                st.session_state.current_chat_id = cid
-                st.rerun()
+    with st.sidebar:
+        st.markdown("<h3 style='color:white;'>🤖 Ambatron AI</h3>", unsafe_allow_html=True)
+        if st.button("➕ Mulai Chat Baru", key="new_chat_sidebar"):
+            st.session_state.current_chat_id = None
+            st.session_state.show_history = False
+            st.rerun()
+            
+        st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#aaa;'>Riwayat Chat</p>", unsafe_allow_html=True)
+        
+        if not st.session_state.chat_sessions:
+            st.markdown("<p style='color:#666; font-size:12px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
+        else:
+            for cid, cdata in reversed(list(st.session_state.chat_sessions.items())):
+                if st.button(f"💬 {cdata['title']}", key=f"load_{cid}"):
+                    st.session_state.current_chat_id = cid
+                    st.session_state.show_history = False
+                    st.rerun()
+                    
+        # Tombol Tutup Manual (Karena sidebar HTML kita ga ada X)
+        if st.button("❌ Tutup Riwayat", key="close_hist"):
+            st.session_state.show_history = False
+            st.rerun()
+            
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- LOGIKA AI ---
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
