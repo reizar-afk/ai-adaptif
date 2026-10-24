@@ -15,7 +15,7 @@ def get_base64_of_bin_file(bin_file):
     return base64.b64encode(data).decode()
 
 try:
-    img_base64 = get_base64_of_bin_file('d6193632d606fd315b6e1e368d6542df.jpg')
+    img_base64 = get_base64_of_bin_file('file_0000000060908207ada17965462dd079.png')
 except:
     img_base64 = ""
 
