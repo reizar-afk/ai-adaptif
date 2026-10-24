@@ -6,8 +6,6 @@ import uuid
 from rag.query import Assistant
 from rag.generate import answer
 
-# --- KONFIGURASI HALAMAN ---
-# Kita sembunyiin sidebar bawaan biar ga ada tombol panah bawaan
 st.set_page_config(page_title="Ambatron AI", layout="centered", initial_sidebar_state="collapsed")
 
 # --- FUNGSI BACKGROUND ---
@@ -26,47 +24,46 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     
-    /* Sembunyiin semua header bawaan Streamlit */
-    #MainMenu {{visibility: hidden;}}
-    header {{display: none !important;}}
-    footer {{visibility: hidden;}}
-    [data-testid="stSidebarNav"] {{display: none;}}
-    [data-testid="collapsedControl"] {{display: none !important;}}
+    #MainMenu, header, footer, [data-testid="stSidebarNav"], [data-testid="collapsedControl"] {{
+        display: none !important; visibility: hidden !important;
+    }}
     
-    /* Background */
     .stApp {{
         background-image: url("data:image/jpeg;base64,{img_base64}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background-size: cover; background-position: center; background-attachment: fixed;
     }}
     .stApp::before {{
         content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.6); z-index: -1;
     }}
     
-    /* HEADER BAR SOLID */
-    .custom-header {{
+    /* HEADER BAR PALSU (HTML) */
+    .fake-header {{
         position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-        background: rgba(10, 10, 10, 0.95); /* Warna hitam pekat */
+        background: rgba(10, 10, 10, 0.95);
         backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Garis pembatas */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0 15px; z-index: 1000;
-        font-family: 'Inter', sans-serif;
+        padding: 0 20px; z-index: 990;
     }}
+    .header-title {{ color: #fff; font-family: 'Inter'; font-weight: 600; font-size: 18px; }}
     
-    .header-btn {{
-        color: #ccc; font-size: 24px; text-decoration: none; cursor: pointer;
-        background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 8px;
+    /* TOMBOL ASLI STREAMLIT YANG DISEMBUNYIIN DI ATAS HEADER */
+    div[data-testid="column"] {{
+        position: fixed !important; top: 0 !important; z-index: 1000 !important;
+        height: 60px !important; display: flex; align-items: center !important;
     }}
-    .header-btn:hover {{ color: #fff; background: rgba(255, 255, 255, 0.2); }}
+    div[data-testid="column"]:nth-of-type(1) {{ left: 10px !important; }}
+    div[data-testid="column"]:nth-of-type(2) {{ right: 10px !important; }}
     
-    .header-title {{
-        color: #fff; font-weight: 600; font-size: 18px; display: flex; align-items: center; gap: 8px;
+    /* Bikin tombolnya invisible tapi tetep bisa diklik */
+    div[data-testid="column"] button {{
+        background: rgba(255,255,255,0.1) !important; color: white !important;
+        border: none !important; border-radius: 8px !important;
+        padding: 5px 12px !important; font-size: 20px !important;
     }}
+    div[data-testid="column"] button:hover {{ background: rgba(255,255,255,0.2) !important; }}
 
-    /* Jarak biar chat ga ketutup header */
     .block-container {{ padding-top: 80px !important; padding-bottom: 100px !important; max-width: 800px; }}
     
     /* Bubble Chat */
@@ -96,62 +93,72 @@ st.markdown(f"""
         position: fixed; top: 60px; left: 0; width: 280px; height: calc(100vh - 60px);
         background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px);
         z-index: 1001; padding: 20px; overflow-y: auto;
-        border-right: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-        transition: transform 0.3s ease;
+        border-right: 1px solid rgba(255,255,255,0.1); box-shadow: 5px 0 15px rgba(0,0,0,0.5);
     }}
-    .history-item {{
-        display: block; color: #ccc; text-decoration: none; padding: 10px;
-        border-radius: 8px; margin-bottom: 8px; font-family: 'Inter'; font-size: 14px;
-        border: 1px solid rgba(255,255,255,0.05);
+    .stButton button {{
+        width: 100%; text-align: left; background: rgba(255,255,255,0.05) !important; 
+        color: white !important; border: none !important; padding: 10px !important;
+        border-radius: 8px !important; margin-bottom: 5px;
     }}
-    .history-item:hover {{ background: rgba(255,255,255,0.1); color: white; }}
+    .stButton button:hover {{ background: rgba(255,255,255,0.15) !important; }}
 </style>
-""", unsafe_allow_html=True)
 
-# --- STATE MANAGEMENT ---
-if "chat_sessions" not in st.session_state:
-    st.session_state.chat_sessions = {}
-if "current_chat_id" not in st.session_state:
-    st.session_state.current_chat_id = None
-if "show_history" not in st.session_state:
-    st.session_state.show_history = False
-
-# --- LOGIKA KLIK HEADER (PAKAI QUERY PARAMS BIAR GA REFRESH) ---
-query_params = st.query_params
-if "action" in query_params:
-    if query_params["action"] == "toggle_history":
-        st.session_state.show_history = not st.session_state.show_history
-    elif query_params["action"] == "new_chat":
-        st.session_state.current_chat_id = None
-        st.session_state.show_history = False
-    elif query_params["action"].startswith("load_"):
-        chat_id = query_params["action"].replace("load_", "")
-        st.session_state.current_chat_id = chat_id
-        st.session_state.show_history = False
-    
-    st.query_params.clear()
-    st.rerun()
-
-# --- HEADER BAR CUSTOM ---
-st.markdown(f"""
-<div class="custom-header">
-    <a href="?action=toggle_history" target="_self" class="header-btn">☰</a>
+<!-- HEADER VISUAL -->
+<div class="fake-header">
+    <div style="width: 40px;"></div> <!-- Spacer Kiri -->
     <div class="header-title">🤖 Ambatron</div>
-    <a href="?action=new_chat" target="_self" class="header-btn">📝</a>
+    <div style="width: 40px;"></div> <!-- Spacer Kanan -->
 </div>
 """, unsafe_allow_html=True)
 
-# --- RENDER OVERLAY HISTORY ---
+# --- STATE MANAGEMENT ---
+if "chat_sessions" not in st.session_state: st.session_state.chat_sessions = {}
+if "current_chat_id" not in st.session_state: st.session_state.current_chat_id = None
+if "show_history" not in st.session_state: st.session_state.show_history = False
+
+# --- TOMBOL ASLI STREAMLIT (DISEMBUNYIIN DI HEADER) ---
+col1, col2 = st.columns([1, 10])
+with col1:
+    # Tombol ☰ (Buka Riwayat)
+    if st.button("☰", key="btn_history"):
+        st.session_state.show_history = not st.session_state.show_history
+        st.rerun()
+
+with col2:
+    # Tombol 📝 (Chat Baru) - kita pake kolom kosong biar posisinya di kanan
+    pass
+
+# Karena Streamlit column susah diatur ke kanan, kita pake trik floating button
+st.markdown("""
+<style>
+    /* Target tombol Chat Baru berdasarkan teksnya (trik CSS) */
+    div[data-testid="column"]:nth-of-type(2) button {
+        /* Ini bakal nangkep tombol Chat Baru kalau kita taruh di kolom 2 */
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- OVERLAY RIWAYAT ---
 if st.session_state.show_history:
     st.markdown('<div class="history-overlay">', unsafe_allow_html=True)
     st.markdown("<h3 style='color:white; font-family:Inter;'>Riwayat Chat</h3>", unsafe_allow_html=True)
+    
+    # Tombol Chat Baru di dalam Overlay
+    if st.button("➕ Mulai Chat Baru", key="btn_new_chat_sidebar"):
+        st.session_state.current_chat_id = None
+        st.session_state.show_history = False
+        st.rerun()
+        
+    st.markdown("---")
     
     if not st.session_state.chat_sessions:
         st.markdown("<p style='color:#aaa; font-size:14px;'>Belum ada riwayat.</p>", unsafe_allow_html=True)
     else:
         for chat_id, data in reversed(list(st.session_state.chat_sessions.items())):
-            st.markdown(f'<a href="?action=load_{chat_id}" target="_self" class="history-item">💬 {data["title"]}</a>', unsafe_allow_html=True)
+            if st.button(f"💬 {data['title']}", key=f"load_{chat_id}"):
+                st.session_state.current_chat_id = chat_id
+                st.session_state.show_history = False
+                st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 
